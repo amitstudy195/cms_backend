@@ -86,3 +86,55 @@ export const loginUser = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Get all registered users
+// @route   GET /api/auth/users
+// @access  Private/Admin
+export const getUsers = async (req, res, next) => {
+  try {
+    const users = await User.find({}).select("-password");
+    res.json({
+      success: true,
+      data: users
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update a user's role
+// @route   PUT /api/auth/users/:id/role
+// @access  Private/Admin
+export const updateUserRole = async (req, res, next) => {
+  const { role } = req.body;
+  const { id } = req.params;
+
+  try {
+    if (!["Admin", "Editor"].includes(role)) {
+      res.status(400);
+      return next(new Error("Invalid role selection. Must be Admin or Editor."));
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      res.status(404);
+      return next(new Error("User not found"));
+    }
+
+    user.role = role;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: `User role updated to ${role}`,
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
